@@ -1,0 +1,659 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# AI MACHINE LEARNING PROJECT - VR GAMING HEADSET PRICING
+
+## LIBRARIES
+
+```{r}
+library(mgcv)
+library(dplyr)
+library(ggplot2)
+```
+
+## EDA ANALYSIS 
+
+```{r}
+vr = vr_data
+```
+
+```{r}
+str(vr)
+```
+
+```{r}
+summary(vr)
+```
+
+```{r}
+numeric = vr %>% select(Price, Resolution,Refresh_Rate, FOV, Weight, Sensors, User_Rating, Battery_Life, Comfort_Score, Coolness )
+```
+
+```{r}
+pairs(~., data=numeric)
+```
+**Important Conclusions Drawn from the Correlation Matrix:**
+
+- Price and Resolution have a very high positive correlation (0.97754402), therefore, as the price increases the resolution tends to increase (this high correlation can lead to multicollinearity even though it could possibly be a good predictor) 
+- Battery_Life is also positively correlated with Price and Resolution, with values 0.63501309 and 0.64856317 respectively.
+- Comfort_Score has a positive correlation with Weight (0.27950826) and FOV (0.17358861).
+```{r}
+#Price Distribution
+hist(vr$Price,breaks = 10,xlab="PRICE")
+```
+
+```{r}
+#Encode Brands to a Numerical value
+unique_brands <- c("InnovateTech", "CompetitorA", "CompetitorB")
+```
+
+```{r}
+vr$Brand <- factor(vr$Brand, levels = unique_brands, ordered = TRUE)
+```
+
+```{r}
+vr$Brand <- as.integer(vr$Brand)
+```
+
+```{r}
+pairs(Price ~ ., data = vr)
+```
+
+```{r}
+pairs(Price ~ Resolution + Sensors + Brand + User_Rating, data = vr)
+```
+
+```{r}
+#Look at potential factors that would influence pricing
+plot(vr$Price, vr$UserRating)
+```
+
+```{r}
+#Look at Price and Resolution
+plot(vr$Price, vr$Resolution)
+```
+
+```{r}
+#What about according to brand?
+plot(vr$Price, vr$Brand)
+```
+
+```{r}
+plot(vr$Price, vr$Coolness)
+```
+
+```{r}
+plot(vr$Resolution, vr$User_Rating)
+```
+
+```{r}
+plot(vr$Brand, vr$Coolness)
+```
+
+```{r}
+ggplot(vr, aes(x = Price, y = User_Rating, color = Brand)) +
+  geom_line() +
+  labs(
+    title = "Price and User Ratings Comparison by Brand",
+    x = "Price",
+    y = "User Rating"
+  )
+```
+
+```{r}
+ggplot(vr, aes(x = Price, y = Coolness, color = Brand)) +
+  geom_line() +
+  labs(
+    title = "Price and Coolness Comparison by Brand",
+    x = "Price",
+    y = "Coolness"
+  )
+```
+
+```{r}
+ggplot(vr, aes(x = Price, y = Resolution, color = Brand)) +
+  geom_line() +
+  labs(
+    title = "Price and Resolution Comparison by Brand",
+    x = "Price",
+    y = "Resolution"
+  )
+```
+
+## LINEAR REGRESSION 
+
+### simple linear regression 
+
+```{r}
+# Perform simple linear regression
+slr_model_reso <- lm(Price ~ Resolution, data = vr)
+```
+
+```{r}
+# Summary of the regression model
+summary(slr_model_reso)
+```
+
+```{r}
+# Plot the regression line
+plot(vr$Resolution, vr$Price, main = "Simple Linear Regression", xlab = "Resolution", ylab = "Price")
+abline(slr_model_reso, col = "red")
+```
+```{r}
+slr_model_bat <- lm(Price ~ Battery_Life, data = vr)
+summary(slr_model_bat)
+```
+
+### multiple linear regression 
+```{r}
+# Perform multiple linear regression
+model_multiple <- lm(Price ~ Resolution + Battery_Life, data = vr)
+
+# Summary of the regression model
+summary(model_multiple)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(slr_model_reso) # Simple Linear Regression
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(model_multiple) # Multiple Linear Regression
+```
+
+```{r}
+fit_all<-lm(Price~.,data=vr)
+summary(fit_all)
+```
+
+```{r}
+fit_best <- step(fit_all,direction = "backward",trace = 0)
+summary(fit_best)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit_best)
+```
+
+## POLYNOMIAL REGRESSION 
+
+### single polynomial regression
+```{r}
+spr_model_reso <- lm(Price ~ poly(Resolution,degree=2), data = vr)
+
+summary(spr_model_reso)
+```
+```{r}
+spr_model_3 <- lm(Price ~ poly(Resolution,degree=3), data = vr)
+
+summary(spr_model_3)
+```
+When we add an extra degree, then the 3rd degree is insignificant 
+
+```{r}
+spr_model_FOV <- lm(Price ~ poly(FOV,degree=2), data = vr)
+
+summary(spr_model_FOV)
+```
+
+### multiple polynomial regression 
+
+```{r}
+m_poly_model <- lm(Price ~ poly(Resolution, 2) + poly(Comfort_Score, 2), data = vr)
+
+summary(m_poly_model)
+```
+```{r}
+par(mfrow=c(1,2))
+termplot(m_poly_model,se=TRUE)
+```
+
+## LOES AND LOWESS
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## GAMs
+
+### univariate GAMs for Price
+```{r}
+# For Resolution vs. Price
+model_resolution <- gam(Price ~ s(Resolution), data = vr)
+plot(model_resolution, main="Resolution vs. Price", shade = TRUE)
+
+# For Refresh_Rate vs. Price
+model_refresh_rate <- gam(Price ~ s(Refresh_Rate), data = vr)
+plot(model_refresh_rate, main="Refresh Rate vs. Price", shade = TRUE)
+
+# For FOV vs. Price
+model_fov <- gam(Price ~ s(FOV), data = vr)
+plot(model_fov, main="Field of View vs. Price", shade = TRUE)
+
+# For Weight vs. Price
+model_weight <- gam(Price ~ s(Weight), data = vr)
+plot(model_weight, main="Weight vs. Price", shade = TRUE)
+
+# For User_Rating vs. Price
+model_user_rating <- gam(Price ~ s(User_Rating), data = vr)
+plot(model_user_rating, main="User Rating vs. Price", shade = TRUE)
+
+# For Battery_Life vs. Price
+model_battery_life <- gam(Price ~ s(Battery_Life), data = vr)
+plot(model_battery_life, main="Battery Life vs. Price", shade = TRUE)
+
+# For Comfort_Score vs. Price
+model_comfort_score <- gam(Price ~ s(Comfort_Score), data = vr)
+plot(model_comfort_score, main="Comfort Score vs. Price", shade = TRUE)
+
+# For Coolness vs. Price
+model_coolness <- gam(Price ~ s(Coolness), data = vr)
+plot(model_coolness, main="Coolness vs. Price", shade = TRUE)
+
+# For Innovation vs. Price
+model_innovation <- gam(Price ~ s(Innovation), data = vr)
+plot(model_innovation, main="Innovation vs. Price", shade = TRUE)
+```
+
+```{r}
+summary(model_innovation)
+```
+```{r}
+summary(model_coolness)
+```
+```{r}
+summary(model_user_rating)
+```
+```{r}
+summary(model_fov)
+```
+
+### multivariate GAM for Price
+```{r}
+gam_model_all <- gam(Price ~ s(Resolution) + s(Refresh_Rate) + s(FOV) + s(Weight) + s(User_Rating) + s(Battery_Life) + s(Comfort_Score) + s(Coolness) + s(Innovation) + Brand, data = vr)
+summary(gam_model_all)
+```
+
+```{r}
+plot(gam_model_all, shade = TRUE, pages = 1)
+```
+
+```{r}
+par(mfrow=c(2,2))
+gam.check(gam_model_all)
+```
+
+```{r}
+gam_model_multi <- gam(Price ~ s(Resolution) + s(Battery_Life) + s(Comfort_Score), data = vr)
+summary(gam_model_multi)
+```
+
+```{r}
+plot(gam_model_multi, shade = TRUE, pages = 1)
+```
+
+```{r}
+model_fov_coolness <- gam(Coolness ~ s(FOV, m=1), data = vr)
+plot(model_fov_coolness, main="Field of View vs. Coolness with m=1", shade = TRUE)
+```
+
+
+## REGULARIZATION 
+
+```{r}
+library(glmnet)
+library(MASS)
+```
+
+### MASS Package using lm.Rdige
+
+- EDA methods below are used to check multicollinearity among the predictors. If high correlation is found among the predictors, ridge regression or other regularization techniques can be considered.
+
+```{r}
+# simple EDA
+pairs(vr[, c("Price", "Resolution", "Refresh_Rate", "FOV", "Weight")])
+
+# correlation of the covariates
+cor(vr[, c("Price", "Resolution", "Refresh_Rate", "FOV", "Weight")])
+```
+
+**Conclusion**: a regression model to predict Price, Resolution and Battery_Life could be good predictors, given their high correlation with Price however a LASSO model must be used to handle multicollinearity and select significant variables. 
+
+
+```{r}
+# fitting the linear model without regularization --> serving as a baseline model 
+lm_fit_noreg <- lm(Price ~ . , data = vr) 
+
+print(coef(lm_fit_noreg))
+summary(lm_fit_noreg)
+```
+
+```{r}
+# applying the ridge regression 
+lambda_values <- seq(0, 10, by=0.1) 
+ridge_fit <- lm.ridge(Price ~ Resolution + Refresh_Rate + FOV + Weight, data = vr, lambda = lambda_values)
+print(ridge_fit)
+```
+
+```{r}
+# diagnostic plot 
+plot(ridge_fit)
+```
+
+```{r}
+# optimal lambda value 
+MASS::select(ridge_fit)
+```
+
+```{r}
+# refitting using the GCV value 
+lambda_values <- seq(0, 10, by=0.2)
+
+ridge_fit_refit <- lm.ridge(Price ~ Resolution + Refresh_Rate + FOV + Weight, data = vr, lambda=lambda_values)
+
+plot(ridge_fit_refit)
+```
+
+```{r}
+# inspecting the values 
+MASS::select(ridge_fit_refit)
+
+summary(ridge_fit_refit)
+# --> seeing as though the GCV value has not changed, this suggests that 0.2 is actually the optimal lambda value. 
+```
+
+```{r}
+# exploring other lambda values 
+lambda_hkb <-seq(0, 10, by=0.09421213) 
+
+ridge_fit_hkb <- lm.ridge(Price ~ Resolution + Refresh_Rate + FOV + Weight, data = vr, lambda = lambda_hkb)
+summary(ridge_fit_hkb)
+plot(ridge_fit_hkb)
+
+lambda_lw <- seq(0, 10, by=0.09438336) 
+ridge_fit_lw <- lm.ridge(Price ~ Resolution + Refresh_Rate + FOV + Weight, data = vr, lambda = lambda_lw)
+summary(ridge_fit_lw)
+plot(ridge_fit_lw)
+
+# why are there 428 coefficients tf? 
+```
+
+
+```{r}
+# visualization 
+# Plot the GCV criteria plot based on the lambda values and find its minimum
+plot(ridge_fit$lambda, ridge_fit$GCV, xlab="lambda values", ylab = "GCV Criteria", type="l")
+points(ridge_fit$lambda[which.min(ridge_fit$GCV)], ridge_fit$GCV[which.min(ridge_fit$GCV)], col="red", pch=19)
+
+```
+
+- To extract more accurate information about the fitted model the glmnet model will be used below!
+
+### GLMNET --> PRICE 
+
+```{r}
+# defining the variables 
+x_price <- model.matrix(Price ~ . - Resolution, data = vr) # excluding highly correlated 'Resolution'
+y_price <- vr$Price
+```
+
+```{r}
+# fitting the lasso and ridge model for price 
+fit_lasso_price <- glmnet(x_price, y_price, alpha = 1) 
+fit_ridge_price <- glmnet(x_price, y_price, alpha = 0) 
+```
+
+```{r}
+# plotting the coefficients for price 
+plot(fit_lasso_price, xvar = "lambda", label = TRUE)
+plot(fit_ridge_price, xvar = "lambda", label = TRUE)
+# degrees-of-freedom on top axis
+# lambda values in x axis 
+```
+
+```{r}
+# Fitting the Ridge Regression for Price
+fit_ridge_price <- glmnet(x_price, y_price, alpha = 0) 
+
+# Plotting the Coefficients
+# By default the x-axis is the L2-norm
+plot(fit_ridge_price)
+```
+
+```{r}
+# Plotting the coefficients with lambda on the x-axis
+plot(fit_ridge_price, xvar = "lambda", label = TRUE)
+```
+
+#### Cross-validation 
+
+```{r}
+# performing the cross-validation 
+set.seed(1010)
+cross_valid_lasso <- cv.glmnet(x_price, y_price, alpha=1)
+cross_valid_ridge <- cv.glmnet(x_price, y_price, alpha=0)
+```
+
+```{r}
+# plotting the cross-validation 
+plot(cross_valid_lasso)
+plot(cross_valid_ridge)
+```
+
+```{r}
+# extracting coefficnets
+coef(cross_valid_lasso, s = "lambda.min")  # or s="lambda.1se"
+```
+
+```{r}
+# plot with the mean absolute error
+cross_valid_lasso_mae <- cv.glmnet(x_price, y_price, alpha=1, type.measure = "mae")
+plot(cross_valid_lasso_mae)
+```
+
+```{r}
+# predicting with optimal lambda 
+predict_price_lambda_min <- predict(cross_valid_lasso, newx = x_price[1:5,], s = "lambda.min")
+predict_price_lambda_min
+predict_price_lambda_1se <- predict(cross_valid_lasso, newx = x_price[1:5,], s = "lambda.1se")
+predict_price_lambda_1se 
+```
+
+```{r}
+# extracting the coefficients 
+coefficients_price <- predict(cross_valid_lasso, type="coefficients", s="lambda.min")
+coefficients_price
+```
+
+- Intercept is the base value for price. 
+- Refresh_Rate, Weight, Sensors, BrandInnovateTech, User_Rating, Coolness, Innovation have coefficients of 0, meaning they are not considered significant in predicting Price in this model.
+- FOV has a coefficient of 0.7813878, suggesting that for every one-unit increase in FOV, the Price increases by approximately 0.78 units, holding all else constant.
+- BrandCompetitorB has a coefficient of 30.5471346, meaning that the presence of this variable/category is associated with an increase in Price by about 30.55 units.
+- Battery_Life has a coefficient of 103.0087719, implying that for every one-unit increase in Battery_Life, the Price increases by approximately 103 units.
+- Comfort_Score has a negative coefficient -3.1041324, suggesting that for every one-unit increase in Comfort_Score, the Price decreases by approximately 3.10 units.
+
+
+```{r}
+# non-zero coefficients
+non_zero_coef_lasso <- predict(cross_valid_lasso, type="coefficients", s="lambda.min")
+non_zero_coef_lasso
+```
+
+
+## PREDICTIONS
+
+### linear model predictions 
+
+```{r}
+predictions <- predict(slr_model_reso, newdata = vr, interval = "confidence", level = 0.95)
+prediction_intervals <- predict(slr_model_reso, newdata = vr, interval = "prediction", level = 0.95)
+```
+
+```{r}
+# Load the necessary libraries
+library(ggplot2)
+
+# Create a scatterplot of the data points
+plot_data <- ggplot(vr, aes(x = Resolution, y = Price)) +
+  geom_point() +
+  labs(
+    title = "Linear Regression with Confidence and Prediction Intervals",
+    x = "Resolution (in pixels)",
+    y = "Price"
+  )
+
+# Add the fitted regression line
+plot_with_line <- plot_data +
+  geom_smooth(method = "lm", formula = y ~ x, se = TRUE, color = "blue")
+
+# Add confidence intervals
+plot_with_confidence_intervals <- plot_with_line +
+  geom_ribbon(
+    aes(ymin = predict(slr_model_reso, interval = "confidence")[, "lwr"],
+        ymax = predict(slr_model_reso, interval = "confidence")[, "upr"]),
+    alpha = 0.2, fill = "blue"
+  )
+
+# Add prediction intervals
+final_plot <- plot_with_confidence_intervals +
+  geom_ribbon(
+    aes(ymin = predict(slr_model_reso, interval = "prediction")[, "lwr"],
+        ymax = predict(slr_model_reso, interval = "prediction")[, "upr"]),
+    alpha = 0.2, fill = "orange"
+  )
+
+# Display the final plot
+final_plot
+```
+
+```{r}
+# Calculate mean predicted price
+mean_predicted_price <- mean(predictions[, "fit"])
+
+# Calculate the range of predicted prices based on confidence intervals
+lower_bound <- min(predictions[, "lwr"])
+upper_bound <- max(predictions[, "upr"])
+
+# Create a summary data frame
+summary_df <- data.frame(
+  Mean_Predicted_Price = round(mean_predicted_price, 2),
+  Lower_Bound = round(lower_bound, 2),
+  Upper_Bound = round(upper_bound, 2)
+)
+
+summary_df
+```
+
+```{r}
+# Calculate mean predicted price
+mean_predicted_price <- mean(prediction_intervals[, "fit"])
+
+# Calculate the range of predicted prices based on prediction intervals
+lower_bound <- min(prediction_intervals[, "lwr"])
+upper_bound <- max(prediction_intervals[, "upr"])
+
+# Create a summary data frame
+summary_df <- data.frame(
+  Mean_Predicted_Price = round(mean_predicted_price, 2),
+  Lower_Bound = round(lower_bound, 2),
+  Upper_Bound = round(upper_bound, 2)
+)
+
+summary_df
+```
+
+```{r}
+# compared to actual data:
+min(vr$Price)
+mean(vr$Price)
+max(vr$Price)
+```
+
+### polynomial model predictions
+
+```{r}
+# Predict the mean values along with confidence and prediction intervals
+predictions <- predict(spr_model_reso, newdata = vr, interval = "confidence", level = 0.95)
+prediction_intervals <- predict(spr_model_reso, newdata = vr, interval = "prediction", level = 0.95)
+```
+
+```{r}
+# Calculate mean predicted price
+mean_predicted_price <- mean(predictions[, "fit"])
+
+# Calculate the range of predicted prices based on confidence intervals
+lower_bound <- min(predictions[, "lwr"])
+upper_bound <- max(predictions[, "upr"])
+
+# Create a summary data frame
+summary_df <- data.frame(
+  Mean_Predicted_Price = round(mean_predicted_price, 2),
+  Lower_Bound = round(lower_bound, 2),
+  Upper_Bound = round(upper_bound, 2)
+)
+
+summary_df
+```
+
+```{r}
+# Calculate mean predicted price
+mean_predicted_price <- mean(prediction_intervals[, "fit"])
+
+# Calculate the range of predicted prices based on prediction intervals
+lower_bound <- min(prediction_intervals[, "lwr"])
+upper_bound <- max(prediction_intervals[, "upr"])
+
+# Create a summary data frame
+summary_df <- data.frame(
+  Mean_Predicted_Price = round(mean_predicted_price, 2),
+  Lower_Bound = round(lower_bound, 2),
+  Upper_Bound = round(upper_bound, 2)
+)
+
+summary_df
+```
+
+
+```{r}
+# Predict the mean values along with confidence and prediction intervals
+predictions <- predict(spr_model_reso, newdata = vr, interval = "confidence", level = 0.95)
+prediction_intervals <- predict(spr_model_reso, newdata = vr, interval = "prediction", level = 0.95)
+
+# Create a data frame for the results
+results <- data.frame(
+  Resolution = vr$Resolution,
+  Predicted = predictions[, "fit"],
+  Lower_CI = predictions[, "lwr"],
+  Upper_CI = predictions[, "upr"],
+  Lower_PI = prediction_intervals[, "lwr"],
+  Upper_PI = prediction_intervals[, "upr"]
+)
+
+# Scatterplot of the 'mpg' vs. 'hp' with confidence and prediction intervals
+ggplot() +
+  geom_point(data = vr, aes(x = Resolution, y = Price)) +
+  geom_line(data = results, aes(x = Resolution, y = Predicted), color = "blue") +
+  geom_ribbon(data = results, aes(x = Resolution, ymin = Lower_CI, ymax = Upper_CI), fill = "lightblue", alpha = 0.5) +
+  geom_ribbon(data = results, aes(x = Resolution, ymin = Lower_PI, ymax = Upper_PI), fill = "orange", alpha = 0.2) +
+  labs(
+    title = "Polynomial Regression with Confidence and Prediction Intervals",
+    x = "Resolution (in pixels)",
+    y = "Price"
+  )
+```
+
+### gam predictions 
+
+```{r}
+
+```
+
