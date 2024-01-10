@@ -1,1 +1,4 @@
-# VR_Headset_Gaming_Analysis_ML_Foundations
+# VR Headset Gaming Analysis ML Foundations
+
+A group project submitted for Artificial Intelligence and Machine Learning Foundations at IE University, Madrid. 
+
