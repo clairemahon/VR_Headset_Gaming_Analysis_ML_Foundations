@@ -8,5 +8,7 @@ Some of the most relevant features were User Rating, Resolution, Battery Life, P
 
 We conducted data analysis utilizing Linear and Polynomial Regression, GAMS, LOESS and LOWESS, LASSO between company prices, product ratings and market trends allowing us to provide pricing strategies and potential product improvements.
 
+The most relevant visuals containing graphical models are in the Visuals folder.
+
 
 
